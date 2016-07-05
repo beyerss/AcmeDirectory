@@ -1,0 +1,72 @@
+[
+ {
+    "firstName": "Steve",
+    "lastName": "Beyers",
+    "department": "Software Engineering",
+    "email": "steve_beyers@acme.com",
+    "phone": "(555) 555-5555"
+ },
+ {
+    "firstName": "Kyle",
+    "lastName": "Morrison",
+    "department": "Accounting",
+    "email": "kyle_morrison@acme.com",
+    "phone": "(555) 555-5556"
+ },
+ {
+    "firstName": "John",
+    "lastName": "Schmidt",
+    "department": "Human Resources",
+    "email": "john_schmidt@acme.com",
+    "phone": "(555) 555-5557"
+ },
+ {
+    "firstName": "Mike",
+    "lastName": "Stevens",
+    "department": "IT",
+    "email": "mike_stevens@acme.com",
+    "phone": "(555) 555-5558"
+ },
+ {
+    "firstName": "John",
+    "lastName": "Stroh",
+    "department": "Software Engineering",
+    "email": "john_stroh@acme.com",
+    "phone": "(555) 555-5558"
+ },
+ {
+    "firstName": "Eric",
+    "lastName": "Carroll",
+    "department": "IT",
+    "email": "eric_carroll@acme.com",
+    "phone": "(555) 555-5558"
+ },
+ {
+    "firstName": "Will",
+    "lastName": "Tyree",
+    "department": "IT",
+    "email": "will_tyree@acme.com",
+    "phone": "(555) 555-5558"
+ },
+ {
+    "firstName": "Alex",
+    "lastName": "Emmanuel",
+    "department": "IT",
+    "email": "alex_emmanuel@acme.com",
+    "phone": "(555) 555-5558"
+ },
+ {
+    "firstName": "Walter",
+    "lastName": "Thompson",
+    "department": "IT",
+    "email": "walter_thompson@acme.com",
+    "phone": "(555) 555-5558"
+ },
+ {
+    "firstName": "Brian",
+    "lastName": "Dawkins",
+    "department": "IT",
+    "email": "brian_dawkins@acme.com",
+    "phone": "(555) 555-5558"
+ }
+]
