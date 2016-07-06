@@ -59,6 +59,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
         // Saves changes in the application's managed object context before the application terminates.
         self.saveContext()
     }
+    
+    // MARK: - Handle Search
+    func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: ([AnyObject]?) -> Void) -> Bool {
+        
+        if (userActivity.activityType == CSSearchableItemActionType) {
+            // This activity represents an item indexed using Core Spotlight, so restore the context related to the unique identifier.
+            // Note that the unique identifier of the Core Spotlight item is set in the activity’s userInfo property for the key CSSearchableItemActivityIdentifier.
+            guard let userInfo = userActivity.userInfo, username = userInfo[CSSearchableItemActivityIdentifier] as? String else { return false }
+            
+            let splitViewController = self.window!.rootViewController as! UISplitViewController
+            let masterNavigationController = splitViewController.viewControllers[0] as! UINavigationController
+            let controller = masterNavigationController.viewControllers[0] as! MasterViewController
+            controller.completeSearch(for: username)
+        }
+        
+        return true
+    }
 
     // MARK: - Split view
 

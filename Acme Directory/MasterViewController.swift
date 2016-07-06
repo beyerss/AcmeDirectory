@@ -147,14 +147,29 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
         self.tableView.endUpdates()
     }
 
-    /*
-     // Implementing the above methods to update the table view in response to individual changes may have performance implications if a large number of changes are made simultaneously. If this proves to be an issue, you can instead just implement controllerDidChangeContent: which notifies the delegate that all section and object changes have been processed.
-     
-     func controllerDidChangeContent(controller: NSFetchedResultsController) {
-         // In the simplest, most efficient, case, reload the table view.
-         self.tableView.reloadData()
-     }
-     */
+    // MARK: - Handle search results
+    func completeSearch(for username: String) {
+        var delay: Double = 0
+        
+        if (navigationController?.viewControllers.count > 1) {
+            // make sure we are on the root view
+            _ = navigationController?.popToRootViewController(animated: false)
+            // increase delay to make navigation work properly
+            delay = 0.25
+        }
+
+        DispatchQueue.main.after(when: .now() + delay) { [weak self] in
+            guard let `self` = self else { return }
+            
+            if let employees = self.fetchedResultsController.fetchedObjects {
+                let usernames = employees.map({ $0.username })
+                if let index = usernames.index(where: { $0 == username }) {
+                    self.tableView.selectRow(at: IndexPath(row: index, section: 0), animated: true, scrollPosition: UITableViewScrollPosition.middle)
+                    self.performSegue(withIdentifier: "showDetail", sender: nil)
+                }
+            }
+        }
+    }
 
 }
 
