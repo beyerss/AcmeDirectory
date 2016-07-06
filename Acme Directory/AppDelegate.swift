@@ -115,10 +115,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
     // MARK: - Initial App Data
     func loadAppData() {
         // has app data been loaded
-        if !UserDefaults.standard().bool(forKey: "hasDataBeenLoaded") {
+        if !UserDefaults.standard.bool(forKey: "hasDataBeenLoaded") {
             
             // get the URL for the local json file
-            let employeeJsonURL = Bundle.main().urlForResource("employees", withExtension: "json")
+            let employeeJsonURL = Bundle.main.urlForResource("employees", withExtension: "json")
             // make sure the url was built properly
             if let url = employeeJsonURL {
                 // pull the file into an NSData object
@@ -137,6 +137,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
                             employee.department = employeeDict["department"] as? String
                             employee.email = employeeDict["email"] as? String
                             employee.phoneNumber = employeeDict["phone"] as? String
+                            employee.username = employeeDict["username"] as? String
                         }
                         
                         saveContext()
@@ -146,7 +147,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
                 }
             }
             
-            UserDefaults.standard().set(true, forKey: "hasDataBeenLoaded")
+            UserDefaults.standard.set(true, forKey: "hasDataBeenLoaded")
         }
     }
 }
