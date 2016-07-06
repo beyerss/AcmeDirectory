@@ -19,12 +19,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
         // Override point for customization after application launch.
-        
+
         // Load default data if needed
         loadAppData()
         // Index data for CoreSpotlight
         indexData()
-        
+
         let splitViewController = self.window!.rootViewController as! UISplitViewController
         let navigationController = splitViewController.viewControllers[splitViewController.viewControllers.count-1] as! UINavigationController
         navigationController.topViewController!.navigationItem.leftBarButtonItem = splitViewController.displayModeButtonItem()
@@ -59,15 +59,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
         // Saves changes in the application's managed object context before the application terminates.
         self.saveContext()
     }
-    
+
     // MARK: - Handle Search
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: ([AnyObject]?) -> Void) -> Bool {
-        
+
         if (userActivity.activityType == CSSearchableItemActionType) {
             // This activity represents an item indexed using Core Spotlight, so restore the context related to the unique identifier.
             // Note that the unique identifier of the Core Spotlight item is set in the activity’s userInfo property for the key CSSearchableItemActivityIdentifier.
             guard let userInfo = userActivity.userInfo, username = userInfo[CSSearchableItemActivityIdentifier] as? String else { return false }
-            
+
             let splitViewController = self.window!.rootViewController as! UISplitViewController
             let masterNavigationController = splitViewController.viewControllers[0] as! UINavigationController
             let controller = masterNavigationController.viewControllers[0] as! MasterViewController
@@ -76,7 +76,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
         else if (userActivity.activityType == CSQueryContinuationActionType) {
             print("Handle search continuation")
         }
-        
+
         return true
     }
 
@@ -105,7 +105,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
             if let error = error {
                 // Replace this implementation with code to handle the error appropriately.
                 // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                 
+
                 /*
                  Typical reasons for an error here include:
                  * The parent directory does not exist, cannot be created, or disallows writing.
@@ -131,7 +131,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
                 // Replace this implementation with code to handle the error appropriately.
                 // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 let nserror = error as NSError
-                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
+                print("Unresolved error \(nserror), \(nserror.userInfo)")
             }
         }
     }
@@ -139,21 +139,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
     // MARK: - Initial App Data
     func loadAppData() {
         // has app data been loaded
-        if !UserDefaults.standard().bool(forKey: "hasDataBeenLoaded") {
-            
+        if !UserDefaults.standard.bool(forKey: "hasDataBeenLoaded") {
+
             // get the URL for the local json file
-            let employeeJsonURL = Bundle.main().urlForResource("employees", withExtension: "json")
+            let employeeJsonURL = Bundle.main.urlForResource("employees", withExtension: "json")
             // make sure the url was built properly
             if let url = employeeJsonURL {
                 // pull the file into an NSData object
                 let jsonData = try? Data(contentsOf: url)
-                
+
                 if let jsonData = jsonData {
                     // create an error placeholder
                     // serialize the json into an array
                     do {
                         let employees = try JSONSerialization.jsonObject(with: jsonData, options: .mutableContainers) as! [[String: AnyObject]]
-                        
+
                         for employeeDict in employees {
                             let employee = Employee(context: self.persistentContainer.viewContext)
                             employee.firstName = employeeDict["firstName"] as? String
@@ -163,28 +163,28 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
                             employee.phoneNumber = employeeDict["phone"] as? String
                             employee.username = employeeDict["username"] as? String
                         }
-                        
+
                         saveContext()
                     } catch {
                         print("Exception!")
                     }
                 }
             }
-            
-            UserDefaults.standard().set(true, forKey: "hasDataBeenLoaded")
+
+            UserDefaults.standard.set(true, forKey: "hasDataBeenLoaded")
         }
     }
-    
+
     func indexData() {
         let fetchRequest: NSFetchRequest<Employee> = Employee.fetchRequest()
-        
+
         do {
             let employees = try persistentContainer.viewContext.fetch(fetchRequest)
             var searchableItems = [CSSearchableItem]()
-            
+
             for employee in employees {
                 let searchableItemAttributeSet = CSSearchableItemAttributeSet(itemContentType: kUTTypeText as String)
-                
+
                 var name = ""
                 if let first = employee.firstName {
                     name = first
@@ -205,14 +205,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
                     searchableItemAttributeSet.phoneNumbers = [phone]
                     searchableItemAttributeSet.instantMessageAddresses = [phone]
                 }
-                
+
                 // Create CSSearchableItem for employee
                 let employeeItem = CSSearchableItem(uniqueIdentifier: employee.username, domainIdentifier: "Acme Employees", attributeSet: searchableItemAttributeSet)
                 // expire one year from now - If the app is not used for a year then the search results will no longer show but it is also very unlikely that the user will search for an employee after a year of not using the app
                 employeeItem.expirationDate = Date(timeInterval: 60 * 60 * 24 * 365, since: Date())
                 searchableItems.append(employeeItem)
             }
-            
+
             // Add all items to the index
             CSSearchableIndex.default().indexSearchableItems(searchableItems, completionHandler: { (error: NSError?) in
                 if let error = error {
@@ -225,4 +225,3 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
         }
     }
 }
-
