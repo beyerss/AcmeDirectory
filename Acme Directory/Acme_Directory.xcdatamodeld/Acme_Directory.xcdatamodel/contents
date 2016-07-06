@@ -6,8 +6,9 @@
         <attribute name="firstName" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="lastName" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="phoneNumber" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="username" attributeType="String" minValueString="1" syncable="YES"/>
     </entity>
     <elements>
-        <element name="Employee" positionX="270" positionY="207" width="128" height="120"/>
+        <element name="Employee" positionX="270" positionY="207" width="128" height="135"/>
     </elements>
 </model>

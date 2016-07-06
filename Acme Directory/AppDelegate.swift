@@ -8,6 +8,8 @@
 
 import UIKit
 import CoreData
+import CoreSpotlight
+import MobileCoreServices
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDelegate {
@@ -20,6 +22,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
         
         // Load default data if needed
         loadAppData()
+        // Index data for CoreSpotlight
+        indexData()
         
         let splitViewController = self.window!.rootViewController as! UISplitViewController
         let navigationController = splitViewController.viewControllers[splitViewController.viewControllers.count-1] as! UINavigationController
@@ -137,6 +141,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
                             employee.department = employeeDict["department"] as? String
                             employee.email = employeeDict["email"] as? String
                             employee.phoneNumber = employeeDict["phone"] as? String
+                            employee.username = employeeDict["username"] as? String
                         }
                         
                         saveContext()
@@ -147,6 +152,56 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
             }
             
             UserDefaults.standard().set(true, forKey: "hasDataBeenLoaded")
+        }
+    }
+    
+    func indexData() {
+        let fetchRequest: NSFetchRequest<Employee> = Employee.fetchRequest()
+        
+        do {
+            let employees = try persistentContainer.viewContext.fetch(fetchRequest)
+            var searchableItems = [CSSearchableItem]()
+            
+            for employee in employees {
+                let searchableItemAttributeSet = CSSearchableItemAttributeSet(itemContentType: kUTTypeText as String)
+                
+                var name = ""
+                if let first = employee.firstName {
+                    name = first
+                }
+                if let last = employee.lastName {
+                    name = "\(name) \(last)"
+                }
+                searchableItemAttributeSet.title = name
+                searchableItemAttributeSet.identifier = employee.username
+                if let title = employee.department {
+                    searchableItemAttributeSet.contentDescription = title
+                }
+                if let email = employee.email {
+                    searchableItemAttributeSet.emailAddresses = [email]
+                }
+                if let phone = employee.phoneNumber {
+                    searchableItemAttributeSet.supportsPhoneCall = NSNumber(value: true)
+                    searchableItemAttributeSet.phoneNumbers = [phone]
+                    searchableItemAttributeSet.instantMessageAddresses = [phone]
+                }
+                
+                // Create CSSearchableItem for employee
+                let employeeItem = CSSearchableItem(uniqueIdentifier: employee.username, domainIdentifier: "Acme Employees", attributeSet: searchableItemAttributeSet)
+                // expire one year from now - If the app is not used for a year then the search results will no longer show but it is also very unlikely that the user will search for an employee after a year of not using the app
+                employeeItem.expirationDate = Date(timeInterval: 60 * 60 * 24 * 365, since: Date())
+                searchableItems.append(employeeItem)
+            }
+            
+            // Add all items to the index
+            CSSearchableIndex.default().indexSearchableItems(searchableItems, completionHandler: { (error: NSError?) in
+                if let error = error {
+                    print("Error indexing searchable items: \(error), \(error.userInfo)")
+                }
+            })
+        } catch {
+            let nserror = error as NSError
+            print("Unresolved error \(nserror), \(nserror.userInfo)")
         }
     }
 }
