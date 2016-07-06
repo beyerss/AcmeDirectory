@@ -73,6 +73,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
             let controller = masterNavigationController.viewControllers[0] as! MasterViewController
             controller.completeSearch(for: username)
         }
+        else if (userActivity.activityType == CSQueryContinuationActionType) {
+            print("Handle search continuation")
+        }
         
         return true
     }
