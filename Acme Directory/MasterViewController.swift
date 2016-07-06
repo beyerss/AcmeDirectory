@@ -8,12 +8,14 @@
 
 import UIKit
 import CoreData
+import CoreSpotlight
 
 class MasterViewController: UITableViewController, NSFetchedResultsControllerDelegate {
 
     var detailViewController: DetailViewController? = nil
     var managedObjectContext: NSManagedObjectContext? = nil
-    var searchResults: [Employee]?
+    var searchResults: [Employee?]?
+    var query: CSSearchQuery?
 
     lazy var searchController: UISearchController = {
         let search = UISearchController(searchResultsController: nil)
@@ -42,17 +44,47 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
     }
     
     func filterContent(search text: String) {
-        searchResults = fetchedResultsController.fetchedObjects?.filter({ (employee: Employee) -> Bool in
-            var result = false
-            if let first = employee.firstName where first.contains(text) {
-                result = true
-            } else if let last = employee.lastName where last.contains(text) {
-                result = true
-            }
-            return result
-        })
+        query?.cancel();
         
-        tableView.reloadData()
+        var results = [Employee?]()
+        
+        let escapedString = text.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        let queryString = "**=\"" + escapedString + "*\"cwdt"
+        print(queryString)
+        
+        query = CSSearchQuery(queryString: queryString, attributes: ["title"])
+        query?.foundItemsHandler =  { [weak self](items : [CSSearchableItem]) -> Void in
+            
+            let mapResults = items.map({ [weak self](item: CSSearchableItem) -> Employee? in
+                guard let `self` = self else { return nil }
+                
+                let employee = self.fetchedResultsController.fetchedObjects?.filter( { $0.username == item.uniqueIdentifier } ).first
+                return employee
+            })
+            
+            results.append(contentsOf: mapResults)
+        }
+        query?.completionHandler = {  [weak self](err) -> Void in
+            results.sort(isOrderedBefore: { (employee1: Employee?, employee2: Employee?) -> Bool in
+                guard let lastName1 = employee1?.lastName, lastName2 = employee2?.lastName else { return true }
+                
+                if (lastName1 == lastName2) {
+                    guard let firstName1 = employee1?.firstName, firstName2 = employee2?.firstName else { return true }
+                    
+                    return (firstName1 <= firstName2)
+                } else {
+                    return lastName1 < lastName2
+                }
+            })
+            
+            /* finish processing */
+            DispatchQueue.main.async(execute: {
+                self?.searchResults = results
+                self?.tableView.reloadData()
+            })
+        }
+        query?.start()
     }
 
     // MARK: - Segues
@@ -101,7 +133,7 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
         let employee: Employee
         
         if searchController.isActive && searchController.searchBar.text != "" {
-            employee = searchResults![indexPath.row]
+            employee = searchResults![indexPath.row]!
         } else {
             employee = self.fetchedResultsController.object(at: indexPath)
         }
@@ -197,26 +229,57 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
 
     // MARK: - Handle search results
     func completeSearch(for username: String) {
-        var delay: Double = 0
-        
-        if (navigationController?.viewControllers.count > 1) {
-            // make sure we are on the root view
-            _ = navigationController?.popToRootViewController(animated: false)
-            // increase delay to make navigation work properly
-            delay = 0.25
-        }
-
-        DispatchQueue.main.after(when: .now() + delay) { [weak self] in
-            guard let `self` = self else { return }
-            
-            if let employees = self.fetchedResultsController.fetchedObjects {
-                let usernames = employees.map({ $0.username })
-                if let index = usernames.index(where: { $0 == username }) {
-                    self.tableView.selectRow(at: IndexPath(row: index, section: 0), animated: true, scrollPosition: UITableViewScrollPosition.middle)
-                    self.performSegue(withIdentifier: "showDetail", sender: nil)
+        let completion = { [weak self] in
+            DispatchQueue.main.async(execute: { [weak self] in
+                guard let `self` = self else { return }
+                
+                if let employees = self.fetchedResultsController.fetchedObjects {
+                    let usernames = employees.map({ $0.username })
+                    if let index = usernames.index(where: { $0 == username }) {
+                        let finish = { [weak self] in
+                            DispatchQueue.main.async(execute: { [weak self] in
+                                self?.tableView.selectRow(at: IndexPath(row: index, section: 0), animated: true, scrollPosition: UITableViewScrollPosition.middle)
+                                self?.performSegue(withIdentifier: "showDetail", sender: nil)
+                            })
+                        }
+                        
+                        if (self.searchController.isActive) {
+                            // stop searching
+                            self.searchController.searchBar.text = ""
+                            self.searchController.isActive = false
+                            self.tableView.reloadData()
+                        }
+                        
+                        if let coordinator = self.transitionCoordinator() {
+                            coordinator.animate(alongsideTransition: nil, completion: { _ in
+                                finish()
+                            })
+                        } else {
+                            finish()
+                        }
+                    }
                 }
-            }
+                })
         }
+        
+        _ = navigationController?.popToRootViewController(animated: false)
+        if let coordinator = transitionCoordinator() {
+            if navigationController?.viewControllers.count > 1 {
+                coordinator.animate(alongsideTransition: nil) { _ in
+                    completion()
+                }
+            } else {
+                completion()
+            }
+        } else {
+            completion()
+        }
+    }
+    
+    func continueSearch(withString searchString: String) {
+        _ = navigationController?.popToRootViewController(animated: true)
+        searchController.isActive = true
+        searchController.searchBar.text = searchString
     }
 
 }
