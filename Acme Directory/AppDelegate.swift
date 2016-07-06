@@ -107,7 +107,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
                 // Replace this implementation with code to handle the error appropriately.
                 // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 let nserror = error as NSError
-                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
+                print("Unresolved error \(nserror), \(nserror.userInfo)")
             }
         }
     }
@@ -137,7 +137,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
                             employee.department = employeeDict["department"] as? String
                             employee.email = employeeDict["email"] as? String
                             employee.phoneNumber = employeeDict["phone"] as? String
-                            employee.username = employeeDict["username"] as? String
+                            employee.username = employeeDict["username≥"] as? String
                         }
                         
                         saveContext()

@@ -65,7 +65,44 @@ class DetailViewController: UIViewController {
             self.configureView()
         }
     }
+    
+    private func getPhoneNumber() -> String {
+        var phoneNumber = ""
+        
+        if let number = detailItem?.phoneNumber {
+            do {
+                let regex = try RegularExpression(pattern: "[0-9]+", options: .caseInsensitive)
+                let matches = regex.matches(in: number, options: .reportProgress, range: NSMakeRange(0, number.characters.count))
+                
+                for match in matches {
+                    phoneNumber += (number as NSString).substring(with: match.range)
+                }
+            } catch {
+                let nserror = error as NSError
+                print("Unresolved error \(nserror), \(nserror.userInfo)")
+            }
+        }
+        
+        return phoneNumber
+    }
 
+    @IBAction func callEmployee() {
+        if let url = URL(string: "tel://\(getPhoneNumber())") {
+            UIApplication.shared().open(url, options: [:], completionHandler: nil)
+        }
+    }
+    
+    @IBAction func sendTextMessage() {
+        if let url = URL(string: "sms://\(getPhoneNumber())") {
+            UIApplication.shared().open(url, options: [:], completionHandler: nil)
+        }
+    }
+    
+    @IBAction func sendEmail() {
+        if let email = detailItem?.email, url = URL(string: "mailto:\(email)") {
+            UIApplication.shared().open(url, options: [:], completionHandler: nil)
+        }
+    }
 
 }
 

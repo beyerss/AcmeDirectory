@@ -13,7 +13,15 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
 
     var detailViewController: DetailViewController? = nil
     var managedObjectContext: NSManagedObjectContext? = nil
+    var searchResults: [Employee]?
 
+    lazy var searchController: UISearchController = {
+        let search = UISearchController(searchResultsController: nil)
+        search.searchResultsUpdater = self
+        search.dimsBackgroundDuringPresentation = false
+        
+        return search
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,11 +31,28 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
             let controllers = split.viewControllers
             self.detailViewController = (controllers[controllers.count-1] as! UINavigationController).topViewController as? DetailViewController
         }
+        
+        definesPresentationContext = true
+        tableView.tableHeaderView = searchController.searchBar
     }
 
     override func viewWillAppear(_ animated: Bool) {
         self.clearsSelectionOnViewWillAppear = self.splitViewController!.isCollapsed
         super.viewWillAppear(animated)
+    }
+    
+    func filterContent(search text: String) {
+        searchResults = fetchedResultsController.fetchedObjects?.filter({ (employee: Employee) -> Bool in
+            var result = false
+            if let first = employee.firstName where first.contains(text) {
+                result = true
+            } else if let last = employee.lastName where last.contains(text) {
+                result = true
+            }
+            return result
+        })
+        
+        tableView.reloadData()
     }
 
     // MARK: - Segues
@@ -35,11 +60,19 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
     override func prepare(for segue: UIStoryboardSegue, sender: AnyObject?) {
         if segue.identifier == "showDetail" {
             if let indexPath = self.tableView.indexPathForSelectedRow {
-            let object = self.fetchedResultsController.object(at: indexPath)
-                let controller = (segue.destinationViewController as! UINavigationController).topViewController as! DetailViewController
-                controller.detailItem = object
-                controller.navigationItem.leftBarButtonItem = self.splitViewController?.displayModeButtonItem()
-                controller.navigationItem.leftItemsSupplementBackButton = true
+                let employee: Employee?
+                if searchController.isActive && searchController.searchBar.text != "" {
+                    employee = searchResults?[indexPath.row]
+                } else {
+                    employee = fetchedResultsController.object(at: indexPath)
+                }
+                
+                if let object = employee {
+                    let controller = (segue.destinationViewController as! UINavigationController).topViewController as! DetailViewController
+                    controller.detailItem = object
+                    controller.navigationItem.leftBarButtonItem = self.splitViewController?.displayModeButtonItem()
+                    controller.navigationItem.leftItemsSupplementBackButton = true
+                }
             }
         }
     }
@@ -47,22 +80,37 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
     // MARK: - Table View
 
     override func numberOfSections(in tableView: UITableView) -> Int {
+        if searchController.isActive && searchController.searchBar.text != "" {
+            return 1
+        }
+        
         return self.fetchedResultsController.sections?.count ?? 0
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if searchController.isActive && searchController.searchBar.text != "" {
+            return searchResults?.count ?? 0
+        }
+        
         let sectionInfo = self.fetchedResultsController.sections![section]
         return sectionInfo.numberOfObjects
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
-        let event = self.fetchedResultsController.object(at: indexPath)
-        self.configureCell(cell, withEvent: event)
+        let employee: Employee
+        
+        if searchController.isActive && searchController.searchBar.text != "" {
+            employee = searchResults![indexPath.row]
+        } else {
+            employee = self.fetchedResultsController.object(at: indexPath)
+        }
+        
+        self.configureCell(cell, withEmployee: employee)
         return cell
     }
 
-    func configureCell(_ cell: UITableViewCell, withEvent employee: Employee) {
+    func configureCell(_ cell: UITableViewCell, withEmployee employee: Employee) {
         var rawName = ""
         if let first = employee.firstName {
             rawName = first
@@ -137,7 +185,7 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
             case .delete:
                 tableView.deleteRows(at: [indexPath!], with: .fade)
             case .update:
-                self.configureCell(tableView.cellForRow(at: indexPath!)!, withEvent: anObject as! Employee)
+                self.configureCell(tableView.cellForRow(at: indexPath!)!, withEmployee: anObject as! Employee)
             case .move:
                 tableView.moveRow(at: indexPath!, to: newIndexPath!)
         }
@@ -156,5 +204,13 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
      }
      */
 
+}
+
+extension MasterViewController: UISearchResultsUpdating {
+    
+    func updateSearchResults(for searchController: UISearchController) {
+        filterContent(search: searchController.searchBar.text!)
+    }
+    
 }
 
