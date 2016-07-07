@@ -15,6 +15,7 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
     var detailViewController: DetailViewController? = nil
     var managedObjectContext: NSManagedObjectContext? = nil
     var searchResults: [Employee?]?
+    // The search query that gets run against the data indexed with Core Spotlight
     var query: CSSearchQuery?
 
     lazy var searchController: UISearchController = {
@@ -43,19 +44,31 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
         super.viewWillAppear(animated)
     }
     
+    /**
+     Run the search using data that we have indexed using Core Spotlight.
+    */
     func filterContent(search text: String) {
+        // If a query was previously being run we should cancel it
         query?.cancel();
         
+        // create a new result set
         var results = [Employee?]()
         
+        // escape the query string
         let escapedString = text.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
+        // create the actual query string specifying that we should test the query string against every field that was indexed used cwdt format:
+        // c: Case Insensitive
+        // w: Insensitive to diacritical marks.
+        // d: Word-based. In addition, the comparison detects transitions from lower-case to upper-case.
+        // t: Performed on the tokenized value. For example, values passed directly from a search field are tokenized.
         let queryString = "**=\"" + escapedString + "*\"cwdt"
         print(queryString)
         
         query = CSSearchQuery(queryString: queryString, attributes: ["title"])
+        // Called when we get new found items
         query?.foundItemsHandler =  { [weak self](items : [CSSearchableItem]) -> Void in
-            
+            // Map each CSSearchableItem result to an Employee object
             let mapResults = items.map({ [weak self](item: CSSearchableItem) -> Employee? in
                 guard let `self` = self else { return nil }
                 
@@ -63,9 +76,12 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
                 return employee
             })
             
+            // add the results found here to the compiled list of results
             results.append(contentsOf: mapResults)
         }
+        // Called when search is completely finished
         query?.completionHandler = {  [weak self](err) -> Void in
+            // Sort results so that employees always appear alphabetically
             results.sort(isOrderedBefore: { (employee1: Employee?, employee2: Employee?) -> Bool in
                 guard let lastName1 = employee1?.lastName, lastName2 = employee2?.lastName else { return true }
                 
@@ -80,10 +96,14 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
             
             /* finish processing */
             DispatchQueue.main.async(execute: {
+                // store the search results
                 self?.searchResults = results
+                // reload the table to show the new results
                 self?.tableView.reloadData()
             })
         }
+        
+        // Now that the query is configured, start it
         query?.start()
     }
 
@@ -277,8 +297,11 @@ class MasterViewController: UITableViewController, NSFetchedResultsControllerDel
     }
     
     func continueSearch(withString searchString: String) {
+        // Make sure we come back to this screen if we need to continue a search
         _ = navigationController?.popToRootViewController(animated: true)
+        // Turn our searching UI on
         searchController.isActive = true
+        // Set the search text in the search bar to the text that was given to us
         searchController.searchBar.text = searchString
     }
 

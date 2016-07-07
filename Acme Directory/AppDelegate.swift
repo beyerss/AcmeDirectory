@@ -76,7 +76,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
             return true
         }
         else if (userActivity.activityType == CSQueryContinuationActionType) {
+            // Handle continuing the search in app if there is a query string
             if let searchQuery = userActivity.userInfo?[CSSearchQueryString] as? String {
+                // pass the query string to the master view controller which is where we do our searching
                 controller.continueSearch(withString: searchQuery)
             }
             
